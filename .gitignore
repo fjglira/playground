@@ -1,0 +1,13 @@
+# Ignore .pulumi folder
+.pulumi/
+
+# Ignore local cluster specific creation files (Resulting from running mapt scripts)
+developer_pass
+host
+id_rsa
+kubeadmin_pass
+kubeconfig
+username
+
+# Ignore crc_secret
+crc_secret
