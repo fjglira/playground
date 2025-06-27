@@ -14,15 +14,20 @@ set -euo pipefail
 # Record the start time
 start_time=$(date +%s)
 
+# Check that env var AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and AWS_DEFAULT_REGION are set
+if [[ -z "${AWS_ACCESS_KEY_ID:-}" || -z "${AWS_SECRET_ACCESS_KEY:-}" || -z "${AWS_DEFAULT_REGION:-}" ]]; then
+    echo "Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_DEFAULT_REGION environment variables."
+    exit 1
+fi
+
 # Step 1: Create a new AWS SNC cluster with 4.19 OCP version
 echo "Creating a new AWS SNC cluster with 4.19 OCP version..."
-podman run -d --rm --name create-snc \
+podman run -d --name create-snc \
     -v "${PWD}:/workspace:z" \
     -e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
     -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
     -e AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}" \
     quay.io/redhat-developer/mapt:v0.9.3 aws openshift-snc create \
-        --project-name snc \
         --backed-url "file:///workspace" \
         --conn-details-output "/workspace" \
         --pull-secret-file /workspace/mapt_poc/pullsecret/crc_secret \
@@ -84,6 +89,16 @@ cd "$SAIL_DIR" || {
     exit 1
 }
 
+# Workaround, set insecure registry and write it in the docker daemon.json file
+export DOCKER_INSECURE_REGISTRIES="default-route-openshift-image-registry.$(oc get routes -A -o jsonpath='{.items[0].spec.host}' | awk -F. '{print substr($0, index($0,$2))}')"
+echo "Insecure registry set to $DOCKER_INSECURE_REGISTRIES"
+echo "Writing insecure registry to /etc/docker/daemon.json"
+echo "{\"insecure-registries\": [\"$DOCKER_INSECURE_REGISTRIES\"]}" | sudo tee /etc/docker/daemon.json > /dev/null
+sudo systemctl restart docker || {
+    echo "Failed to restart Docker service"
+    exit 1
+}
+
 TARGET_ARCH=amd64 GINGO_FLAGS="-v" make test.e2e.ocp || {
     echo "E2E test failed"
     exit 1
@@ -106,11 +121,11 @@ echo "Total elapsed time: $(printf "%02d:%02d:%02d\n" $hours $minutes $seconds)"
 
 # Step 6: Delete the cluster
 echo "Destroying the cluster..."
-podman run --rm --name destroy-snc \
-    -v "${PWD}:/workspace:z" \
-    -e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
-    -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
-    -e AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}" \
-    quay.io/redhat-developer/mapt:v0.9.3 aws openshift-snc destroy \
-        --project-name poc-mapt \
-        --conn-details-output "/workspace"
+podman run -d --name destroy-snc \
+            -v ${PWD}:/workspace:z \
+            -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+            -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
+            -e AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} \
+            quay.io/redhat-developer/mapt:v0.9.3 aws openshift-snc destroy \
+                --project-name poc-mapt \
+                --backed-url "file:///workspace" 

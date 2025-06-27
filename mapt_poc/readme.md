@@ -24,7 +24,7 @@ Under the `/workspace` directory, you will find the connection details for the c
 # Delete the cluster
     
 ```bash
-podman run -d --rm --name destroy-snc \
+podman run -d --name destroy-snc \
             -v ${PWD}:/workspace:z \
             -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
             -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
@@ -35,3 +35,13 @@ podman run -d --rm --name destroy-snc \
 # Check logs 
 podman logs -f destroy-snc
 ```
+
+# Cleanup pulumi files
+If you want to remove the pulumi files created by the `mapt` command, you can run the following command:
+
+```bash
+rm -rf .pulumi
+```
+
+Note: that not removing this files after a failure can cause issues when trying to create a new cluster.
+
