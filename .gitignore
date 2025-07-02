@@ -11,3 +11,6 @@ username
 
 # Ignore crc_secret
 crc_secret
+
+# Avoid logs
+*.log
