@@ -17,6 +17,8 @@ DELETE_CLUSTER=true
 # Setup comprehensive logging
 SCRIPT_START_TIME=$(date '+%Y%m%d_%H%M%S')
 MAIN_LOG_FILE="mapt_poc_${SCRIPT_START_TIME}.log"
+CREATE_SNC_LOG_FILE="create_snc_${SCRIPT_START_TIME}.log"
+DESTROY_SNC_LOG_FILE="destroy_snc_${SCRIPT_START_TIME}.log"
 
 # Function to log with timestamp
 log_with_timestamp() {
@@ -162,7 +164,7 @@ cleanup() {
                     -e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
                     -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
                     -e AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}" \
-                    ghcr.io/redhat-developer/mapt:pr-525 aws openshift-snc destroy \
+                    quay.io/redhat-developer/mapt:v0.9.4 aws openshift-snc destroy \
                         --project-name poc-mapt \
                         --backed-url "file:///workspace"    
 
@@ -181,7 +183,7 @@ cleanup() {
                 
                 # Save logs from destroy-snc container
                 log_with_timestamp "Saving destroy-snc container logs to destroy-snc.log..."
-                podman logs "$destroy_container_id" > destroy-snc.log 2>&1 || log_with_timestamp "Failed to capture destroy logs"
+                podman logs "$destroy_container_id" > "$DESTROY_SNC_LOG_FILE" 2>&1 || log_with_timestamp "Failed to capture destroy logs"
                 set -e # Re-enable -e
                 
                 if [ "$destroy_exit_code" -ne 0 ]; then
@@ -195,7 +197,7 @@ cleanup() {
                 # Save logs even on timeout
                 set +e
                 log_with_timestamp "Saving destroy-snc container logs to destroy-snc.log..."
-                podman logs "$destroy_container_id" > destroy-snc.log 2>&1 || log_with_timestamp "Failed to capture destroy logs on timeout"
+                podman logs "$destroy_container_id" > "$DESTROY_SNC_LOG_FILE" 2>&1 || log_with_timestamp "Failed to capture destroy logs on timeout"
                 set -e
                 log_with_timestamp "Warning: Cluster destruction may not have completed"
             fi
@@ -262,7 +264,7 @@ if [ "$CREATE_CLUSTER" = true ]; then
         -e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
         -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
         -e AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}" \
-        ghcr.io/redhat-developer/mapt:pr-525 aws openshift-snc create \
+        quay.io/redhat-developer/mapt:v0.9.4 aws openshift-snc create \
             --backed-url "file:///workspace" \
             --conn-details-output "/workspace" \
             --pull-secret-file /workspace/mapt_poc/pullsecret/crc_secret \
@@ -288,7 +290,7 @@ if [ "$CREATE_CLUSTER" = true ]; then
         
         # Save logs from create-snc container
         log_with_timestamp "Saving create-snc container logs to create-snc.log..."
-        podman logs "$container_id" > create-snc.log 2>&1
+        podman logs "$container_id" > "$CREATE_SNC_LOG_FILE" 2>&1
         
         if [ "$exit_code" -ne 0 ]; then
             log_with_timestamp "Error creating the cluster, exit code: $exit_code"
@@ -304,7 +306,7 @@ if [ "$CREATE_CLUSTER" = true ]; then
         log_with_timestamp "Timeout waiting for container to stop"
         # Save logs even on timeout
         log_with_timestamp "Saving create-snc container logs to create-snc.log..."
-        podman logs "$container_id" > create-snc.log 2>&1
+        podman logs "$container_id" > "$CREATE_SNC_LOG_FILE" 2>&1
         # Since set -e is active, this exit 1 will trigger the ERR trap and then EXIT trap
         exit 1
     fi
@@ -339,12 +341,28 @@ if [ "$RUN_TESTS" = true ]; then
         # Temporarily disable -e for this check as 'oc' might fail initially,
         # but we handle it with the if/else
         set +e
-        if ! oc get nodes &> /dev/null; then
-            log_with_timestamp "Failed to connect to the cluster via 'oc'. Please check your kubeconfig and cluster status."
+        retry_start_time=$(date +%s)
+        retry_timeout=300  # 5 minutes timeout for retrying connection
+
+        while true; do
+            if oc get nodes &> /dev/null; then
+            log_with_timestamp "Cluster connectivity established via 'oc'."
+            break
+            else
+            log_with_timestamp "Failed to connect to the cluster via 'oc'. Retrying..."
+            sleep 10
+            fi
+
+            current_time=$(date +%s)
+            elapsed_time=$((current_time - retry_start_time))
+
+            if [ $elapsed_time -ge $retry_timeout ]; then
+            log_with_timestamp "Timeout reached while trying to connect to the cluster via 'oc'."
             log_with_timestamp "Skipping tests due to cluster connectivity issues."
             set -e # Re-enable -e before exiting
-            exit 1 
-        fi
+            exit 1
+            fi
+        done
         set -e # Re-enable -e
         log_with_timestamp "Cluster connectivity established."
 

@@ -1,5 +1,6 @@
 # Ignore .pulumi folder
 .pulumi/
+.pulumi_bk/
 
 # Ignore local cluster specific creation files (Resulting from running mapt scripts)
 developer_pass
