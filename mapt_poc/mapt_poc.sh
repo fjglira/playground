@@ -162,7 +162,7 @@ cleanup() {
                     -e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
                     -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
                     -e AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}" \
-                    quay.io/redhat-developer/mapt:v0.9.3 aws openshift-snc destroy \
+                    ghcr.io/redhat-developer/mapt:pr-525 aws openshift-snc destroy \
                         --project-name poc-mapt \
                         --backed-url "file:///workspace"    
 
@@ -262,13 +262,15 @@ if [ "$CREATE_CLUSTER" = true ]; then
         -e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
         -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
         -e AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}" \
-        quay.io/redhat-developer/mapt:v0.9.3 aws openshift-snc create \
+        ghcr.io/redhat-developer/mapt:pr-525 aws openshift-snc create \
             --backed-url "file:///workspace" \
             --conn-details-output "/workspace" \
             --pull-secret-file /workspace/mapt_poc/pullsecret/crc_secret \
             --tags project=crc,environment=local,user=frherrer \
             --version 4.19.0 \
             --spot \
+            --cpus 16 \
+            --memory 64 \
             --project-name poc-mapt
 
     # Step 1.5: Wait until the cluster is created
@@ -313,6 +315,10 @@ else
         cluster_created=true  # Assume cluster exists for delete mode
     fi
 fi
+
+# Before running the test ensure that the cluster is fully operational
+log_with_timestamp "Checking if the cluster is fully operational..."
+
 
 # Step 2: Run tests (if enabled and cluster is available)
 if [ "$RUN_TESTS" = true ]; then
@@ -364,7 +370,6 @@ if [ "$RUN_TESTS" = true ]; then
             set +e  # Temporarily disable exit on error to catch make failures
             # Run the e2e test with specific flags
             # SKIP_BUILD is set to true to avoid rebuilding the operator, using nigtlhy image for this POC
-
             SKIP_BUILD=true KEEP_ON_FAILURE=true make test.e2e.ocp
             test_exit_code=$?
             set -e  # Re-enable exit on error

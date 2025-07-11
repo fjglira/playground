@@ -131,6 +131,26 @@ The script creates a cluster with these specifications:
 - **Cluster Creation**: 40 minutes (2400 seconds)
 - **Cluster Destruction**: 20 minutes (1200 seconds)
 
+### Check no leftover resources
+
+```bash
+REGIONS=$(aws ec2 describe-regions --output text --query 'Regions[].RegionName')
+for REGION in $REGIONS; do
+  echo -e "\n--- Instances in region: $REGION ---"
+  aws ec2 describe-instances \
+    --region "$REGION" \
+    --query 'Reservations[*].Instances[*].{
+      ID: InstanceId,
+      Type: InstanceType,
+      State: State.Name,
+      Name: Tags[?Key==`Name`].Value | [0],
+      PublicIp: PublicIpAddress,
+      PrivateIp: PrivateIpAddress,
+      LaunchTime: LaunchTime
+    }' \
+    --output table
+done
+```
 
 ## 🔗 **Related Resources**
 
