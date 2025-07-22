@@ -16,7 +16,7 @@ helm repo update
 helm install devlake devlake/devlake --version=1.0-beta1 --set lake.encryptionSecret.secret=$ENCRYPTION_SECRET
 
 # 4. Wait for devlake to be ready
-kubectl wait --for=condition=available --timeout=600s deployment/devlake -n devlake
+kubectl wait --for=condition=available --timeout=600s deployment/devlake-lake -n default
 
 # 5. Port forward to access devlake
 echo "DevLake is now running. You can access it at http://localhost:4000"
