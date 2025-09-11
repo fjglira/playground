@@ -1,0 +1,36 @@
+{
+    "targets": {
+        "reportportal": {
+            "config": {
+                "hostname": "reportportal-ossm.apps.dno.ocp-hub.prod.psi.redhat.com",
+                "project": "osssm_general"
+            },
+            "processing": {
+                "apply_tfa": true,
+                "launch": {
+                    "name": "Istio Ambient integration test",
+                    "description": "Istio Integration test Ambient test run for Istio midstream repository",
+                    "attributes": [
+                        {
+                            "key": "tool",
+                            "value": "data-router"
+                        },
+						{
+							"key": "skippedIsNotIssue", 
+							"value": "true",
+							"system": true
+						},    
+                        {
+                            "key": "istio_version",
+                            "value": "master"
+                        },
+                        {
+                            "key": "stage",
+                            "value": "midstream"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

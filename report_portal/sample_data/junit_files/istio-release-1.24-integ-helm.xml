@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+	<testsuite tests="3" failures="0" time="54.267" name="istio.io/istio/tests/integration/helm" timestamp="2025-09-10T15:30:00">
+		<properties>
+			<property name="go.version" value="go1.23.10"></property>
+		</properties>
+		<testcase classname="helm" name="TestDefaultInstall" time="32.840"></testcase>
+		<testcase classname="helm" name="TestReleaseChannels" time="9.320"></testcase>
+		<testcase classname="helm" name="TestRevisionedReleaseChannels" time="11.490"></testcase>
+		<testcase classname="helm" name="TestMain" time="0.000"></testcase>
+	</testsuite>
+</testsuites>

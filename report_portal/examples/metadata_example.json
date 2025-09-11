@@ -1,0 +1,35 @@
+{
+    "targets": {
+        "reportportal": {
+            "config": {
+                "hostname": "reportportal-ossm.apps.dno.ocp-hub.prod.psi.redhat.com",
+                "project": "osssm_general"
+            },
+            "processing": {
+                "apply_tfa": true,
+                "launch": {
+                    "name": "Test POC",
+                    "description": "Istio Integration test Telemtry test run for Istio midstream repository",
+                    "attributes": [
+                        {
+                            "value": "additional_values"
+                        },
+                        {
+                            "key": "tool",
+                            "value": "data-router"
+                        },
+						{
+							"key": "skippedIsNotIssue", 
+							"value": "true/false",
+							"system": true
+						},    
+                        {
+                            "key": "istio_version",
+                            "value": "master"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
