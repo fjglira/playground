@@ -6,10 +6,11 @@
                 "project": "osssm_general"
             },
             "processing": {
-                "apply_tfa": true,
+                "apply_tfa": false,
                 "launch": {
                     "name": "Istio integration test",
                     "description": "Istio integration test run for Istio midstream repository",
+                    "startTime": 1757666755000,
                     "attributes": [
                         {
                             "key": "tool",
